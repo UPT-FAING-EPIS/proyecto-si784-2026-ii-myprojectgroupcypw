@@ -45,9 +45,49 @@ def registrar_identidad(
     return identidad
 
 
+@router.get("", response_model=list[schemas.IdentidadRespuesta])
+def listar_identidades(db: Session = Depends(get_db)):
+    """Padrón completo de identidades ficticias registradas (RF-17)."""
+    return IdentidadService(db).listar()
+
+
 @router.get("/{id_identidad}", response_model=schemas.IdentidadRespuesta)
 def consultar_identidad(id_identidad: str, db: Session = Depends(get_db)):
     try:
         return IdentidadService(db).consultar(id_identidad)
     except IdentidadNoEncontradaError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.patch("/{id_identidad}", response_model=schemas.IdentidadRespuesta)
+def actualizar_identidad(
+    id_identidad: str,
+    datos: schemas.IdentidadActualizar,
+    db: Session = Depends(get_db),
+):
+    """Corrige el nombre o el documento ficticio (RF-19)."""
+    try:
+        return IdentidadService(db).actualizar(id_identidad, datos)
+    except IdentidadNoEncontradaError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/{id_identidad}/estado", response_model=schemas.IdentidadRespuesta)
+def cambiar_estado_identidad(
+    id_identidad: str,
+    datos: schemas.CambioEstadoIdentidad,
+    db: Session = Depends(get_db),
+):
+    """Activa o bloquea una identidad por decisión administrativa (RF-20).
+
+    La reactivación permite devolver al padrón una identidad bloqueada
+    automáticamente por acumular intentos fallidos (RN-05).
+    """
+    try:
+        return IdentidadService(db).cambiar_estado(id_identidad, datos.estado)
+    except IdentidadNoEncontradaError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

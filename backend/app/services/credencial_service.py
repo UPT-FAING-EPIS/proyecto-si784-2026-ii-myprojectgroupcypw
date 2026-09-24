@@ -36,6 +36,14 @@ class CredencialService:
         self.db.refresh(credencial)
         return credencial
 
+    def listar(self) -> list[Credencial]:
+        """Todas las credenciales emitidas, de la más reciente a la más antigua."""
+        return (
+            self.db.query(Credencial)
+            .order_by(Credencial.fecha_emision.desc())
+            .all()
+        )
+
     def leer(self, codigo: str) -> Credencial:
         credencial = self.db.query(Credencial).filter(Credencial.codigo == codigo).first()
         if credencial is None:

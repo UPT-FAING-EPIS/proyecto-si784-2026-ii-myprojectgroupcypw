@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NotaryVerify — Estación de Verificación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="estilos.css" />
+</head>
+<body>
+
+<div class="resplandor" aria-hidden="true"></div>
+
+<header class="barra">
+  <div class="marca">
+    <svg class="marca__sello" viewBox="0 0 40 40" aria-hidden="true">
+      <defs>
+        <linearGradient id="gradSello" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f0d68a" />
+          <stop offset="100%" stop-color="#c09b36" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#gradSello)" />
+      <path d="M12 20.5l5.4 5.4L28 15.3" fill="none" stroke="#2a1f06"
+            stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <div class="marca__texto">
+      <strong>NotaryVerify</strong>
+      <span>Estación de Verificación de Identidad</span>
+    </div>
+  </div>
+
+  <ol class="pasos" id="pasos">
+    <li class="paso" data-paso="1"><i class="paso__punto"></i><span>Credencial</span></li>
+    <li class="paso" data-paso="2"><i class="paso__punto"></i><span>Rostro</span></li>
+    <li class="paso" data-paso="3"><i class="paso__punto"></i><span>Prueba de vida</span></li>
+    <li class="paso" data-paso="4"><i class="paso__punto"></i><span>Resultado</span></li>
+  </ol>
+
+  <div class="barra__final">
+    <div class="modos" role="tablist">
+      <button class="modo modo--activo" id="modo-verificar" role="tab">Verificación</button>
+      <button class="modo" id="modo-administrar" role="tab">Administración</button>
+    </div>
+    <div class="conexion" id="conexion">
+      <span class="conexion__punto"></span>
+      <span id="texto-api">conectando</span>
+    </div>
+  </div>
+</header>
+
+<main class="escenario">
+
+  <!-- ══════════════ PASO 1 · CREDENCIAL ══════════════ -->
+  <section class="pantalla pantalla--activa" id="pantalla-credencial">
+    <div class="panel panel--angosto">
+      <span class="etiqueta">Paso 1 de 4</span>
+      <h1 class="titulo">Presente la credencial</h1>
+      <p class="guia">Lea el código QR o RFID del compareciente para recuperar el registro que debe verificarse.</p>
+
+      <label class="campo">
+        <span class="campo__nombre">Código de credencial</span>
+        <input id="entrada-codigo" type="text" placeholder="NV-000000000000"
+               autocomplete="off" spellcheck="false" />
+      </label>
+
+      <p class="alerta" id="error-credencial" hidden></p>
+
+      <button class="boton boton--principal boton--ancho" id="boton-iniciar">
+        <span class="boton__texto">Iniciar verificación</span>
+      </button>
+
+      <p class="pie">La credencial identifica el registro esperado.<br />Por sí sola no aprueba ninguna identidad.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ PASO 2 · ROSTRO ══════════════ -->
+  <section class="pantalla" id="pantalla-rostro">
+    <div class="panel panel--captura">
+
+      <div class="visor" id="visor-rostro">
+        <video id="video-rostro" class="visor__video" autoplay playsinline muted></video>
+        <svg class="visor__guia" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+          <mask id="mascaraRostro">
+            <rect width="400" height="300" fill="#fff" />
+            <ellipse cx="200" cy="143" rx="86" ry="116" fill="#000" />
+          </mask>
+          <rect width="400" height="300" fill="rgba(4,8,16,.62)" mask="url(#mascaraRostro)" />
+          <ellipse cx="200" cy="143" rx="86" ry="116" class="visor__ovalo" />
+        </svg>
+        <div class="visor__esquinas" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="visor__barrido" aria-hidden="true"></div>
+
+        <div class="visor__caido" id="sin-camara-rostro" hidden>
+          <strong>Cámara no disponible</strong>
+          <p class="pie" id="motivo-camara-rostro"></p>
+          <label class="boton boton--sutil">
+            Subir una fotografía
+            <input type="file" accept="image/*" id="archivo-rostro" hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="lateral">
+        <span class="etiqueta">Paso 2 de 4</span>
+        <h1 class="titulo">Captura facial</h1>
+        <p class="guia">Sitúe el rostro dentro del óvalo, de frente y con buena iluminación.</p>
+
+        <ul class="consejos">
+          <li>Retire gafas oscuras, gorras o mascarillas</li>
+          <li>Evite contraluces y sombras marcadas</li>
+          <li>Mire directamente a la cámara</li>
+        </ul>
+
+        <p class="alerta" id="error-rostro" hidden></p>
+
+        <div class="lateral__acciones">
+          <button class="boton boton--principal boton--ancho" id="boton-capturar-rostro">
+            <span class="boton__texto">Capturar rostro</span>
+          </button>
+          <button class="boton boton--fantasma boton--ancho" data-volver>Cancelar</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════ PASO 3 · PRUEBA DE VIDA ══════════════ -->
+  <section class="pantalla" id="pantalla-vida">
+    <div class="panel panel--captura">
+
+      <div class="visor" id="visor-vida">
+        <video id="video-vida" class="visor__video" autoplay playsinline muted></video>
+        <svg class="visor__guia" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+          <mask id="mascaraVida">
+            <rect width="400" height="300" fill="#fff" />
+            <ellipse cx="200" cy="143" rx="86" ry="116" fill="#000" />
+          </mask>
+          <rect width="400" height="300" fill="rgba(4,8,16,.62)" mask="url(#mascaraVida)" />
+          <ellipse cx="200" cy="143" rx="86" ry="116" class="visor__ovalo" />
+        </svg>
+        <div class="visor__esquinas" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+        <div class="cuenta" id="cuenta" hidden>
+          <svg class="cuenta__anillo" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="cuenta__pista" cx="60" cy="60" r="52" />
+            <circle class="cuenta__avance" cx="60" cy="60" r="52" id="cuenta-avance" />
+          </svg>
+          <span class="cuenta__cifra" id="cuenta-cifra">3</span>
+          <span class="cuenta__orden" id="cuenta-orden" hidden></span>
+        </div>
+
+        <div class="visor__caido" id="sin-camara-vida" hidden>
+          <strong>Cámara no disponible</strong>
+          <p class="pie" id="motivo-camara-vida"></p>
+          <label class="boton boton--sutil">
+            Subir una fotografía
+            <input type="file" accept="image/*" id="archivo-vida" hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="lateral">
+        <span class="etiqueta">Paso 3 de 4</span>
+        <h1 class="titulo">Prueba de vida</h1>
+        <p class="guia">El sistema solicita una acción elegida al azar. Realícela cuando el contador llegue a cero.</p>
+
+        <div class="desafio">
+          <span class="desafio__cabecera">
+            <i class="desafio__chispa"></i> Acción solicitada
+          </span>
+          <strong class="desafio__accion" id="texto-accion">—</strong>
+          <span class="desafio__detalle" id="detalle-accion"></span>
+        </div>
+
+        <p class="alerta" id="error-vida" hidden></p>
+
+        <div class="lateral__acciones">
+          <button class="boton boton--principal boton--ancho" id="boton-ejecutar-vida">
+            <span class="boton__texto">Comenzar</span>
+          </button>
+          <button class="boton boton--fantasma boton--ancho" id="boton-otra-accion">Sortear otra acción</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════ PASO 4 · RESULTADO ══════════════ -->
+  <section class="pantalla" id="pantalla-resultado">
+    <div class="panel panel--veredicto" id="veredicto">
+      <span class="etiqueta">Paso 4 de 4 · Resultado</span>
+
+      <div class="sello" id="sello">
+        <svg class="sello__anillo" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="sello__aro" cx="60" cy="60" r="54" />
+        </svg>
+        <span class="sello__glifo" id="sello-glifo"></span>
+      </div>
+
+      <h1 class="titulo titulo--veredicto" id="veredicto-titulo">—</h1>
+      <p class="guia guia--centro" id="veredicto-motivo"></p>
+
+      <ul class="factores" id="factores"></ul>
+
+      <details class="expediente">
+        <summary>Detalle de la sesión</summary>
+        <dl id="detalle-lista"></dl>
+      </details>
+
+      <button class="boton boton--principal boton--ancho" id="boton-nueva">
+        <span class="boton__texto">Nueva verificación</span>
+      </button>
+
+      <p class="pie pie--legal">
+        Prototipo académico. Un resultado favorable significa únicamente que se superaron
+        los mecanismos experimentales configurados; no tiene valor de identificación legal.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════ ADMINISTRACIÓN ══════════════ -->
+  <section class="pantalla" id="pantalla-admin">
+    <div class="admin">
+
+      <nav class="subnav" role="tablist">
+        <button class="subnav__ficha subnav__ficha--activa" data-seccion="identidades" role="tab">
+          Identidades <span class="subnav__cifra" id="cifra-identidades">—</span>
+        </button>
+        <button class="subnav__ficha" data-seccion="credenciales" role="tab">
+          Credenciales <span class="subnav__cifra" id="cifra-credenciales">—</span>
+        </button>
+        <button class="subnav__ficha" data-seccion="auditoria" role="tab">Auditoría</button>
+      </nav>
+
+      <!-- ───── Identidades ───── -->
+      <div class="seccion seccion--activa" id="seccion-identidades">
+        <div class="panel panel--admin">
+
+          <!-- Vista: padrón -->
+          <div class="vista vista--activa" id="vista-padron">
+            <div class="cabecera-panel">
+              <div>
+                <span class="etiqueta">Padrón</span>
+                <h2 class="titulo">Identidades registradas</h2>
+                <p class="guia">Una identidad pasa a BLOQUEADA tras tres verificaciones fallidas consecutivas (RN-05).</p>
+              </div>
+              <div class="acciones--cabecera">
+                <button class="boton boton--sutil boton--compacto" id="boton-refrescar-padron">
+                  <span class="boton__texto">Actualizar</span>
+                </button>
+                <button class="boton boton--principal boton--compacto" id="boton-nueva-identidad">
+                  <span class="boton__texto">Registrar identidad</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="tabla-envoltura tabla-envoltura--alta" id="padron-envoltura" hidden>
+              <table class="tabla tabla--padron">
+                <thead>
+                  <tr>
+                    <th>Nombre ficticio</th>
+                    <th>Documento</th>
+                    <th>Estado</th>
+                    <th class="tabla__centro">Credenciales</th>
+                    <th>Registrada</th>
+                    <th class="tabla__derecha">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="padron-filas"></tbody>
+              </table>
+            </div>
+
+            <p class="alerta" id="error-padron" hidden></p>
+            <p class="vacio" id="padron-vacio" hidden>
+              Todavía no hay identidades registradas. Use «Registrar identidad» para crear la primera.
+            </p>
+          </div>
+
+          <!-- Vista: enrolamiento -->
+          <div class="vista" id="vista-enrolar">
+            <div class="cabecera-panel">
+              <div>
+                <span class="etiqueta">Enrolamiento</span>
+                <h2 class="titulo">Registrar identidad</h2>
+                <p class="guia">Toda muestra biométrica exige el consentimiento expreso del participante.</p>
+              </div>
+              <button class="boton boton--fantasma boton--compacto" id="boton-cancelar-enrolar">Volver al padrón</button>
+            </div>
+
+            <div class="formulario">
+              <div class="tramo">
+                <span class="tramo__num">1</span>
+                <div class="tramo__cuerpo">
+                  <h3 class="tramo__titulo">Consentimiento del participante</h3>
+                  <div class="pareja">
+                    <label class="campo">
+                      <span class="campo__nombre">ID del participante voluntario</span>
+                      <input id="adm-participante" type="text" placeholder="VOLUNTARIO-01" autocomplete="off" />
+                    </label>
+                    <label class="campo">
+                      <span class="campo__nombre">Alcance del consentimiento</span>
+                      <input id="adm-alcance" type="text" value="PRUEBAS ACADEMICAS NOTARYVERIFY 2026-II" autocomplete="off" />
+                    </label>
+                  </div>
+                  <button class="boton boton--sutil" id="boton-consentimiento">
+                    <span class="boton__texto">Otorgar consentimiento</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="tramo">
+                <span class="tramo__num">2</span>
+                <div class="tramo__cuerpo">
+                  <h3 class="tramo__titulo">Datos e imagen de referencia</h3>
+                  <div class="enrolar">
+                    <div class="enrolar__datos">
+                      <div class="pareja">
+                        <label class="campo">
+                          <span class="campo__nombre">Nombre ficticio</span>
+                          <input id="adm-nombre" type="text" placeholder="PERSONA-001" autocomplete="off" />
+                        </label>
+                        <label class="campo">
+                          <span class="campo__nombre">Documento ficticio</span>
+                          <input id="adm-documento" type="text" placeholder="00000001" autocomplete="off" />
+                        </label>
+                      </div>
+                      <label class="marca-verificacion">
+                        <input type="checkbox" id="adm-ficticio" />
+                        <span>Confirmo que los datos son ficticios y que el participante otorgó su consentimiento</span>
+                      </label>
+                    </div>
+
+                    <div class="enrolar__camara">
+                      <span class="campo__nombre">Fotografía de referencia</span>
+                      <div class="visor visor--miniatura" id="visor-enrolar">
+                        <video id="video-enrolar" class="visor__video" autoplay playsinline muted></video>
+                        <img class="visor__tomada" id="foto-tomada" alt="Fotografía capturada" hidden />
+                        <div class="visor__caido" id="sin-camara-enrolar" hidden>
+                          <strong>Sin cámara</strong>
+                          <p class="pie" id="motivo-camara-enrolar"></p>
+                        </div>
+                      </div>
+                      <div class="acciones--par">
+                        <button class="boton boton--sutil boton--compacto" id="boton-tomar-foto">
+                          <span class="boton__texto">Tomar fotografía</span>
+                        </button>
+                        <label class="boton boton--fantasma boton--compacto">
+                          Subir archivo
+                          <input type="file" accept="image/*" id="adm-archivo" hidden />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="alerta" id="error-admin-identidad" hidden></p>
+            <p class="exito" id="ok-admin-identidad" hidden></p>
+
+            <button class="boton boton--principal boton--ancho" id="boton-registrar-identidad">
+              <span class="boton__texto">Registrar identidad</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ───── Credenciales ───── -->
+      <div class="seccion" id="seccion-credenciales">
+        <div class="panel panel--admin">
+
+          <!-- Vista: listado -->
+          <div class="vista vista--activa" id="vista-credenciales">
+            <div class="cabecera-panel">
+              <div>
+                <span class="etiqueta">Listado</span>
+                <h2 class="titulo">Credenciales emitidas</h2>
+                <p class="guia">Una credencial revocada nunca habilita una verificación (RN-04).</p>
+              </div>
+              <div class="acciones--cabecera">
+                <button class="boton boton--sutil boton--compacto" id="boton-refrescar-credenciales">
+                  <span class="boton__texto">Actualizar</span>
+                </button>
+                <button class="boton boton--principal boton--compacto" id="boton-nueva-credencial">
+                  <span class="boton__texto">Emitir credencial</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="tabla-envoltura tabla-envoltura--alta" id="credenciales-envoltura" hidden>
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Identidad</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Emitida</th>
+                    <th class="tabla__derecha">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="credenciales-filas"></tbody>
+              </table>
+            </div>
+
+            <p class="alerta" id="error-credenciales" hidden></p>
+            <p class="vacio" id="credenciales-vacio" hidden>
+              Todavía no se ha emitido ninguna credencial.
+            </p>
+          </div>
+
+          <!-- Vista: emisión -->
+          <div class="vista" id="vista-emitir">
+            <div class="cabecera-panel">
+              <div>
+                <span class="etiqueta">Emisión</span>
+                <h2 class="titulo">Emitir credencial</h2>
+                <p class="guia">La credencial identifica el registro a verificar. Por sí sola no aprueba ninguna identidad.</p>
+              </div>
+              <button class="boton boton--fantasma boton--compacto" id="boton-cancelar-emitir">Volver al listado</button>
+            </div>
+
+            <div class="emision">
+              <div class="emision__campo">
+                <label class="campo">
+                  <span class="campo__nombre">ID de identidad</span>
+                  <input id="adm-id-identidad" type="text" placeholder="Elíjala desde el padrón" autocomplete="off" />
+                </label>
+                <button class="boton boton--principal boton--ancho" id="boton-emitir">
+                  <span class="boton__texto">Emitir credencial QR</span>
+                </button>
+                <p class="pie">Puede llegar aquí con el identificador ya cargado usando el botón «Credencial» del padrón.</p>
+              </div>
+
+              <div class="credencial" id="credencial-emitida" hidden>
+                <img class="credencial__qr" id="credencial-qr" alt="Código QR de la credencial" />
+                <div class="credencial__datos">
+                  <span class="campo__nombre">Código emitido</span>
+                  <strong class="credencial__codigo" id="credencial-codigo">—</strong>
+                  <div class="acciones--par">
+                    <button class="boton boton--sutil boton--compacto" id="boton-usar-codigo">Usar en verificación</button>
+                    <button class="boton boton--fantasma boton--compacto" id="boton-copiar-codigo">Copiar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="alerta" id="error-admin-credencial" hidden></p>
+            <p class="exito" id="ok-admin-credencial" hidden></p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ───── Auditoría ───── -->
+      <div class="seccion" id="seccion-auditoria">
+        <div class="panel panel--admin">
+          <div class="cabecera-panel">
+            <div>
+              <span class="etiqueta">Auditoría</span>
+              <h2 class="titulo">Bitácora criptográfica</h2>
+              <p class="guia">Cada evento incorpora el hash del anterior. Alterar cualquier registro rompe la cadena a partir de ese punto.</p>
+            </div>
+            <div class="acciones--cabecera">
+              <button class="boton boton--sutil boton--compacto" id="boton-listar-eventos">
+                <span class="boton__texto">Listar eventos</span>
+              </button>
+              <button class="boton boton--principal boton--compacto" id="boton-verificar-cadena">
+                <span class="boton__texto">Verificar cadena</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="cadena" id="cadena-estado" hidden></div>
+
+          <div class="tabla-envoltura tabla-envoltura--alta" id="tabla-envoltura" hidden>
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th class="tabla__centro">#</th>
+                  <th>Evento</th>
+                  <th>Hash anterior</th>
+                  <th>Hash actual</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-eventos"></tbody>
+            </table>
+          </div>
+
+          <p class="alerta" id="error-admin-auditoria" hidden></p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<canvas id="lienzo" hidden></canvas>
+
+<script src="app.js"></script>
+</body>
+</html>

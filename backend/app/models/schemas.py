@@ -32,6 +32,17 @@ class IdentidadRespuesta(BaseModel):
     fecha_registro: datetime
 
 
+class IdentidadActualizar(BaseModel):
+    """Campos corregibles de una identidad. La referencia facial no lo es."""
+
+    nombre_ficticio: str | None = None
+    documento_ficticio: str | None = None
+
+
+class CambioEstadoIdentidad(BaseModel):
+    estado: str
+
+
 class CredencialCrear(BaseModel):
     id_identidad: str
     tipo: str = "QR"
@@ -43,6 +54,7 @@ class CredencialRespuesta(BaseModel):
     id: str
     codigo: str
     tipo: str
+    id_identidad: str
     estado: str
     fecha_emision: datetime
 

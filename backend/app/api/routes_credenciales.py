@@ -18,6 +18,12 @@ def emitir_credencial(datos: schemas.CredencialCrear, db: Session = Depends(get_
     return CredencialService(db).emitir(datos)
 
 
+@router.get("", response_model=list[schemas.CredencialRespuesta])
+def listar_credenciales(db: Session = Depends(get_db)):
+    """Todas las credenciales emitidas, con su estado actual (RF-18)."""
+    return CredencialService(db).listar()
+
+
 @router.get("/{codigo}", response_model=schemas.CredencialRespuesta)
 def leer_credencial(codigo: str, db: Session = Depends(get_db)):
     try:
