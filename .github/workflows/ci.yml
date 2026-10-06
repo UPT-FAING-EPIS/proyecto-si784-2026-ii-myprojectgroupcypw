@@ -35,6 +35,11 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
+      # MediaPipe carga libEGL/libGLES al crear imágenes aunque no use GPU.
+      - name: apt-get install libegl1 libgles2 libgl1
+        working-directory: .
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgles2 libgl1
+
       - name: pip install -r requirements.txt
         run: |
           python -m pip install --upgrade pip
