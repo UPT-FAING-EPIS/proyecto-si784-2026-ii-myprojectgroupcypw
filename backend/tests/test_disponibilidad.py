@@ -93,7 +93,9 @@ def test_monitor_registra_sondeos_en_csv(monkeypatch, tmp_path):
     monkeypatch.setattr(monitor, "sondear", lambda _url: next(respuestas))
     salida = tmp_path / "disponibilidad.csv"
 
-    resultado = monitor.monitorear("http://ejemplo/salud", intervalo_s=0, duracion_s=0.0001, salida=salida)
+    # Un intervalo positivo y duración cero garantizan exactamente un sondeo:
+    # la prueba deja de depender de cuántos ciclos puede ejecutar el host.
+    resultado = monitor.monitorear("http://ejemplo/salud", intervalo_s=0.001, duracion_s=0, salida=salida)
 
     assert resultado["sondeos"] >= 1
     assert salida.read_text(encoding="utf-8").splitlines()[0] == "fecha_utc,codigo,estado,latencia_ms"
