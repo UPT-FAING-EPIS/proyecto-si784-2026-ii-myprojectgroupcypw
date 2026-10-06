@@ -1,0 +1,94 @@
+# Integración continua mínima de NotaryVerify (issue #23).
+# Gates obligatorios: pruebas backend, OpenSpec, enlaces Markdown, Compose y
+# ausencia de datos runtime versionados. No descarga modelos ni usa biometría
+# real: las pruebas simulan los adaptadores biométricos con datos sintéticos.
+# Las mediciones experimentales (#24, #26, #27) no forman parte de estos gates.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Pruebas backend (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: python -m pytest -q
+        run: python -m pytest -q --junitxml=pytest-report.xml
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: backend/pytest-report.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  specs-docs:
+    name: OpenSpec y enlaces Markdown
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: openspec validate --all --strict
+        run: npx --yes @fission-ai/openspec@1.14.0 validate --all --strict --no-interactive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: python .github/scripts/check_markdown_links.py
+        run: python .github/scripts/check_markdown_links.py
+
+  repo-config:
+    name: Compose y datos runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: docker compose config --quiet
+        run: docker compose config --quiet
+
+      - name: Comprobar que no se versionan datos runtime
+        run: |
+          versionados=$(git ls-files | grep -E '^backend/data/|(^|/)\.venv/|(^|/)\.env$|\.(db|sqlite3?)$|__pycache__/' || true)
+          if [ -n "$versionados" ]; then
+            echo "::error::Hay archivos runtime versionados (ver .gitignore y AGENTS.md):"
+            echo "$versionados"
+            exit 1
+          fi
+          echo "Sin datos runtime, entornos virtuales ni .env versionados."

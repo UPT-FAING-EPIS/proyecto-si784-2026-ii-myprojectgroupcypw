@@ -39,7 +39,7 @@ Los números de issue son reales y se consultan en `https://github.com/UPT-FAING
 | RNF-06 autenticación y acceso | #4, #5, #22 | `test_auth`, `test_authorization` | Verificado M1; endurecimiento en #22 |
 | RNF-07 HTTPS/TLS | #22 | configuración de staging y guía | Pendiente |
 | RNF-08 navegadores vigentes | #9, #25 | matriz Chrome/Edge/Firefox | Pendiente |
-| RNF-09 mantenibilidad | #6, #21, #23 | capas, documentación y CI | Parcial |
+| RNF-09 mantenibilidad | #6, #21, #23 | capas, documentación y `.github/workflows/ci.yml` | CI verificada en cada PR (#23); persistencia pendiente (#21) |
 | RNF-10 recuperación de auditoría | #16, #17 | reconstrucción de evidencia, alteración controlada | Verificado M4 |
 
 ## Reglas de negocio

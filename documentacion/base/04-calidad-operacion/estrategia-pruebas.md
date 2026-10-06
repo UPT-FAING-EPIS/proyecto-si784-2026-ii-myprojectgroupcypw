@@ -7,6 +7,8 @@
 | Frontend | estación, administración, credencial y auditoría | lista de humo manual |
 | Contenedores | configuración y endpoints | docker compose config y docker compose up |
 | Especificación | artefactos válidos | openspec validate cambio --strict |
+| Documentación | enlaces locales existentes | python .github/scripts/check_markdown_links.py |
+| Integración continua | gates en cada PR y push a main | .github/workflows/ci.yml |
 
 ## Evidencia inicial
 
@@ -76,3 +78,33 @@ interno de una prueba. `test_authorization.py` verifica además que Operador no
 puede consultar la bitácora ni reconstruir una sesión, mientras Administrador
 sí. Esta evidencia no declara la cadena como blockchain ni permite editar o
 borrar eventos históricos.
+
+## Integración continua (#23)
+
+`.github/workflows/ci.yml` se ejecuta en cada pull request, en cada push a main
+y manualmente. Cada paso se nombra con el comando que ejecuta, de modo que un
+fallo indica qué reproducir localmente. Gates obligatorios:
+
+| Job | Comando | Evidencia |
+| --- | --- | --- |
+| Pruebas backend (pytest) | `cd backend; python -m pytest -q` con Python 3.11 | artefacto `pytest-report` (JUnit), publicado también si falla |
+| OpenSpec y enlaces Markdown | `openspec validate --all --strict` y `python .github/scripts/check_markdown_links.py` | salida del paso con archivo:línea del enlace roto |
+| Compose y datos runtime | `docker compose config --quiet` y control de `git ls-files` | lista de archivos runtime versionados, si existen |
+
+Equivalente local desde la raíz del repositorio:
+
+```
+cd backend; python -m pytest -q; cd ..
+openspec validate --all --strict
+python .github/scripts/check_markdown_links.py
+docker compose config --quiet
+```
+
+Límites: CI no descarga modelos, no usa cámara, navegador ni biometría real; las
+pruebas biométricas usan patrones sintéticos y adaptadores simulados. La fuente
+histórica con Git propio no se descarga y sus enlaces no se comprueban. Las
+mediciones de rendimiento (#24), compatibilidad de navegador (#25) y evaluación
+experimental (#26, #27) no son gates obligatorios.
+
+El 2026-10-05 la ejecución local equivalente aprobó 76 pruebas, 18 elementos
+OpenSpec, 115 archivos Markdown sin enlaces rotos y la configuración Compose.
