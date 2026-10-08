@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NotaryVerify — Dashboard de utilización</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --n-950: #070c16; --n-900: #0b1220; --n-850: #101a2b; --n-800: #162339;
+    --n-700: #1f3150; --n-400: #7d93b3; --n-200: #c6d4e8; --n-050: #eef4fc;
+    --zafiro-400: #5aa0f5; --oro-400: #dcb85a; --esmeralda: #3ecf96; --rojo: #f0605c; --ambar: #e8973f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--n-950); color: var(--n-200); font-family: Inter, system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+           padding: 18px 24px; border-bottom: 1px solid var(--n-800); }
+  h1 { font-family: Fraunces, serif; font-size: 1.3rem; color: var(--n-050); margin: 0; }
+  header p { margin: 2px 0 0; font-size: .85rem; color: var(--n-400); }
+  a { color: var(--zafiro-400); }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, button { font: inherit; border-radius: 10px; border: 1px solid var(--n-700);
+                          background: var(--n-900); color: var(--n-050); padding: 8px 12px; }
+  button { background: var(--n-800); cursor: pointer; font-weight: 600; }
+  .aviso { font-size: .8rem; color: var(--n-400); margin: 0 0 20px; }
+  .estado { margin: 0 0 16px; color: var(--ambar); min-height: 1.2em; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--n-900); border: 1px solid var(--n-800); border-radius: 14px; padding: 14px 16px; }
+  .kpi span { display: block; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--n-400); }
+  .kpi strong { display: block; font-size: 1.6rem; color: var(--n-050); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .panel { background: var(--n-900); border: 1px solid var(--n-800); border-radius: 14px; padding: 16px; min-width: 0; }
+  .panel h2 { font-size: .95rem; margin: 0 0 12px; color: var(--n-050); }
+  .panel canvas { width: 100% !important; max-height: 280px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Dashboard de utilización</h1>
+    <p>NotaryVerify · métricas agregadas, sin datos personales · <a href="index.html">Volver a la estación</a></p>
+  </div>
+  <form id="login">
+    <input id="correo" type="email" placeholder="correo (administrador o auditor)" autocomplete="username" required />
+    <input id="password" type="password" placeholder="contraseña" autocomplete="current-password" required />
+    <button type="submit">Ingresar</button>
+  </form>
+  <form id="filtros" hidden>
+    <label for="dias">Periodo</label>
+    <select id="dias">
+      <option value="7">7 días</option>
+      <option value="14" selected>14 días</option>
+      <option value="30">30 días</option>
+      <option value="90">90 días</option>
+    </select>
+    <button type="button" id="actualizar">Actualizar</button>
+    <button type="button" id="salir">Salir</button>
+  </form>
+</header>
+
+<main>
+  <p class="aviso">Prototipo académico sin valor de identificación legal. Los datos provienen de identidades ficticias.</p>
+  <p class="estado" id="estado" role="status"></p>
+  <section class="kpis" id="kpis"></section>
+  <section class="graficos" id="graficos" hidden>
+    <div class="panel"><h2>Sesiones por día</h2><canvas id="g-dia"></canvas></div>
+    <div class="panel"><h2>Resultados de verificación</h2><canvas id="g-resultado"></canvas></div>
+    <div class="panel"><h2>Sesiones por estado</h2><canvas id="g-estado"></canvas></div>
+    <div class="panel"><h2>Trámites por estado</h2><canvas id="g-tramite"></canvas></div>
+    <div class="panel"><h2>Credenciales por tipo</h2><canvas id="g-credencial"></canvas></div>
+    <div class="panel"><h2>Usuarios por rol</h2><canvas id="g-rol"></canvas></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

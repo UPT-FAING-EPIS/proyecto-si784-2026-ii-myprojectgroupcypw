@@ -12,6 +12,7 @@ from app.api import (
     routes_auditoria,
     routes_auth,
     routes_credenciales,
+    routes_dashboard,
     routes_documentos,
     routes_identidades,
     routes_referencias,
@@ -71,6 +72,7 @@ app.include_router(routes_reglas.router)
 app.include_router(routes_documentos.router)
 app.include_router(routes_auditoria.router)
 app.include_router(routes_tramites.router)
+app.include_router(routes_dashboard.router)
 
 ERROR_CONTRACTS = {
     ConsentimientoRequeridoError: (409, "CONSENT_REQUIRED"),
