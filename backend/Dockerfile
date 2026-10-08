@@ -10,5 +10,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# Usuario sin privilegios; /app/data se crea con su propietario para que un
+# volumen nuevo herede los permisos.
+RUN useradd --create-home --uid 10001 notaryverify && mkdir -p /app/data && chown notaryverify:notaryverify /app/data
+USER notaryverify
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
