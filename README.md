@@ -4,6 +4,19 @@ Prototipo académico de verificación multicapa de identidad para trámites nota
 
 > Aviso: NotaryVerify no sustituye a Reniec, SID-Sunarp, firma digital oficial ni procedimientos notariales. Sus resultados no tienen valor de identificación legal. Solo se permiten identidades ficticias y biometría de voluntarios con consentimiento.
 
+## Estado público
+
+- Código fuente, issues, hitos y resultados de CI:
+  [repositorio público en GitHub](https://github.com/UPT-FAING-EPIS/proyecto-si784-2026-ii-myprojectgroupcypw).
+- El proyecto no tiene una aplicación pública desplegada. La demostración se
+  ejecuta localmente mediante las instrucciones de este README o Docker Compose;
+  no se debe interpretar la ausencia de una URL pública como una integración con
+  servicios institucionales reales.
+- M1 a M6 están cerrados y validados por CI. M7 requiere evaluación biométrica
+  y de prueba de vida con personas voluntarias y consentimiento; M8 depende de
+  esa evidencia y del cierre de trazabilidad. Los pendientes se mantienen
+  visibles en las issues #26 a #29.
+
 ## MVP
 
 El flujo actual registra una identidad ficticia, emite una credencial QR de prueba, crea una sesión, compara un rostro, solicita una prueba de vida y aplica reglas para emitir un resultado. La evidencia incluye auditoría encadenada, hash SHA-256 de documentos de prueba y trámites simulados.
