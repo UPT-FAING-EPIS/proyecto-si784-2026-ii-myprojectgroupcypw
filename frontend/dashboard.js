@@ -2,20 +2,20 @@
    Reutiliza el token de la estación (misma clave en sessionStorage). */
 
 const API = window.NOTARYVERIFY_API || "http://127.0.0.1:8000";
-const CLAVE_TOKEN = "notaryverify_token";
+const CLAVE_SESION = "notaryverify_token";
 const COLORES = ["#5aa0f5", "#3ecf96", "#dcb85a", "#f0605c", "#e8973f", "#a78bfa", "#7d93b3", "#8ec2ff"];
 const graficos = {};
 
 const $ = (id) => document.getElementById(id);
 
 function leerToken() {
-  try { return sessionStorage.getItem(CLAVE_TOKEN); } catch { return null; }
+  try { return sessionStorage.getItem(CLAVE_SESION); } catch { return null; }
 }
 
 function guardarToken(valor) {
   try {
-    if (valor) sessionStorage.setItem(CLAVE_TOKEN, valor);
-    else sessionStorage.removeItem(CLAVE_TOKEN);
+    if (valor) sessionStorage.setItem(CLAVE_SESION, valor);
+    else sessionStorage.removeItem(CLAVE_SESION);
   } catch { /* sin almacenamiento: el token vive solo en esta página */ }
 }
 
