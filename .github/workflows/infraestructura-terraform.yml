@@ -1,0 +1,260 @@
+# Infraestructura como código (infra/terraform) en Azure.
+# - pruebas: fmt, validate y terraform test con proveedores simulados (sin
+#   credenciales); publica el reporte de pruebas superadas.
+# - costos: Infracost estima el costo mensual; requiere el secreto INFRACOST_API_KEY.
+# - aprovisionar: solo manual (workflow_dispatch) con accion=plan|apply|destroy.
+#   Requiere el secreto AZURE_CREDENTIALS (JSON del service principal con
+#   clientId, clientSecret, subscriptionId y tenantId) y, para conservar el
+#   estado, las variables TFSTATE_RESOURCE_GROUP, TFSTATE_STORAGE_ACCOUNT y
+#   TFSTATE_CONTAINER. Opcional: secreto TF_USUARIOS_DEMO con usuarios ficticios.
+name: Infraestructura (Terraform)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/infraestructura-terraform.yml"
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/infraestructura-terraform.yml"
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Acción sobre Azure"
+        type: choice
+        options: [plan, apply, destroy]
+        default: plan
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.9.8"
+  TF_DIR: infra/terraform
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  pruebas:
+    name: Pruebas de Terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform fmt -check
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform init -backend=false
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform validate -no-color | tee validate.txt
+
+      - name: terraform test
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set -o pipefail
+          terraform test -no-color | tee terraform-test.txt
+
+      - name: Reporte de pruebas superadas
+        if: always()
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          {
+            echo "# Reporte de pruebas de infraestructura — NotaryVerify"
+            echo ""
+            echo "- Terraform ${TF_VERSION} · proveedores simulados (sin recursos reales)"
+            echo "- Validación: $(cat validate.txt 2>/dev/null || echo 'no ejecutada')"
+            echo ""
+            echo "| Prueba | Resultado |"
+            echo "| --- | --- |"
+            grep -E '^\s+run "' terraform-test.txt | sed -E 's/^\s+run "([^"]+)"\.\.\. (.*)$/| \1 | \2 |/' \
+              | sed -e 's/| pass |/| ✅ pass |/' -e 's/| fail |/| ❌ fail |/'
+            echo ""
+            echo "**$(grep -E '^(Success|Failure)!' terraform-test.txt || echo 'Sin resultado')**"
+          } > terraform-test-reporte.md
+          cat terraform-test-reporte.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-test-reporte
+          path: |
+            ${{ env.TF_DIR }}/terraform-test-reporte.md
+            ${{ env.TF_DIR }}/terraform-test.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+  costos:
+    name: Reporte de costos (Infracost)
+    needs: pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Comprobar INFRACOST_API_KEY
+        id: clave
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+        run: |
+          if [ -z "$INFRACOST_API_KEY" ]; then
+            echo "::warning::Configure el secreto INFRACOST_API_KEY (gratuito en infracost.io) para el reporte de costos."
+            echo "Reporte de costos omitido: falta el secreto INFRACOST_API_KEY." >> "$GITHUB_STEP_SUMMARY"
+            echo "disponible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "disponible=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.clave.outputs.disponible == 'true'
+
+      - uses: infracost/actions/setup@v3
+        if: steps.clave.outputs.disponible == 'true'
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: infracost breakdown
+        if: steps.clave.outputs.disponible == 'true'
+        run: |
+          infracost breakdown --path "$TF_DIR" --format json --out-file infracost.json
+          infracost output --path infracost.json --format table --out-file infracost.txt
+          infracost output --path infracost.json --format html --out-file infracost.html
+          {
+            echo "# Reporte de costos de infraestructura — NotaryVerify"
+            echo ""
+            echo "Costo mensual estimado: **USD $(jq -r '.totalMonthlyCost // "0"' infracost.json)**"
+            echo ""
+            echo '```'
+            cat infracost.txt
+            echo '```'
+          } > infracost-reporte.md
+          cat infracost-reporte.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar reporte de costos
+        if: steps.clave.outputs.disponible == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: infracost-reporte
+          path: |
+            infracost-reporte.md
+            infracost.json
+            infracost.html
+          retention-days: 30
+
+  aprovisionar:
+    name: Aprovisionar en Azure (${{ inputs.accion }})
+    if: github.event_name == 'workflow_dispatch'
+    needs: pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: azure
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Credenciales de Azure para Terraform
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          TF_USUARIOS_DEMO: ${{ secrets.TF_USUARIOS_DEMO }}
+        run: |
+          # Usuarios ficticios opcionales: JSON con operador_correo, operador_password,
+          # admin_correo y admin_password (variable usuarios_demo de Terraform).
+          if [ -n "$TF_USUARIOS_DEMO" ]; then
+            echo "TF_VAR_usuarios_demo=$(echo "$TF_USUARIOS_DEMO" | jq -c .)" >> "$GITHUB_ENV"
+          fi
+          if [ -z "$AZURE_CREDENTIALS" ]; then
+            echo "::error::Falta el secreto AZURE_CREDENTIALS."
+            exit 1
+          fi
+          for campo in clientId clientSecret subscriptionId tenantId; do
+            valor=$(echo "$AZURE_CREDENTIALS" | jq -r ".$campo")
+            echo "::add-mask::$valor"
+          done
+          {
+            echo "ARM_CLIENT_ID=$(echo "$AZURE_CREDENTIALS" | jq -r .clientId)"
+            echo "ARM_CLIENT_SECRET=$(echo "$AZURE_CREDENTIALS" | jq -r .clientSecret)"
+            echo "ARM_SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -r .subscriptionId)"
+            echo "ARM_TENANT_ID=$(echo "$AZURE_CREDENTIALS" | jq -r .tenantId)"
+          } >> "$GITHUB_ENV"
+
+      - name: terraform init (estado remoto si está configurado)
+        working-directory: ${{ env.TF_DIR }}
+        env:
+          TFSTATE_RESOURCE_GROUP: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+          TFSTATE_STORAGE_ACCOUNT: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+          TFSTATE_CONTAINER: ${{ vars.TFSTATE_CONTAINER }}
+        run: |
+          if [ -n "$TFSTATE_STORAGE_ACCOUNT" ]; then
+            printf 'terraform {\n  backend "azurerm" {}\n}\n' > backend_override.tf
+            terraform init -input=false \
+              -backend-config="resource_group_name=$TFSTATE_RESOURCE_GROUP" \
+              -backend-config="storage_account_name=$TFSTATE_STORAGE_ACCOUNT" \
+              -backend-config="container_name=${TFSTATE_CONTAINER:-tfstate}" \
+              -backend-config="key=notaryverify.tfstate"
+          else
+            echo "::warning::Sin TFSTATE_STORAGE_ACCOUNT el estado es local y se publica como artefacto."
+            terraform init -input=false
+          fi
+
+      - name: terraform plan
+        working-directory: ${{ env.TF_DIR }}
+        env:
+          ACCION: ${{ inputs.accion }}
+        run: |
+          if [ "$ACCION" = "destroy" ]; then
+            terraform plan -destroy -input=false -no-color -out=tfplan | tee plan.txt
+          else
+            terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          fi
+
+      - name: terraform apply
+        if: inputs.accion != 'plan'
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Salidas
+        if: inputs.accion == 'apply'
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform output -json > salidas.json
+          {
+            echo "## Infraestructura aprovisionada"
+            echo ""
+            echo "- Frontend: $(jq -r .url_frontend.value salidas.json)"
+            echo "- API: $(jq -r .url_backend.value salidas.json)"
+            echo "- Resource Group: $(jq -r .grupo_recursos.value salidas.json)"
+            echo ""
+            echo "Configure las variables del repositorio AZURE_WEBAPP_BACKEND=$(jq -r .webapp_backend.value salidas.json),"
+            echo "AZURE_WEBAPP_FRONTEND=$(jq -r .webapp_frontend.value salidas.json) y"
+            echo "NOTARYVERIFY_API_URL=$(jq -r .url_backend.value salidas.json) para el workflow de release."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar plan y estado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-${{ inputs.accion }}
+          path: |
+            ${{ env.TF_DIR }}/plan.txt
+            ${{ env.TF_DIR }}/salidas.json
+            ${{ env.TF_DIR }}/terraform.tfstate
+          if-no-files-found: ignore
+          retention-days: 30

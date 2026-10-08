@@ -1,0 +1,6 @@
+# Rutas excluidas del análisis Semgrep: documentación, especificaciones y runtime.
+documentacion/
+openspec/
+backend/data/
+backend/.venv/
+**/__pycache__/

@@ -156,3 +156,13 @@ separadores, como `04A1B2C3`. `GET /credenciales/rfid/{uid}` usa el adaptador
 simulado y devuelve el mismo contrato de credencial que QR; una credencial
 revocada conserva su estado y una inexistente retorna `CREDENTIAL_NOT_FOUND`.
 La lectura solo recupera el registro: nunca aprueba una sesión por sí misma.
+
+## Dashboard de utilización
+
+`GET /dashboard/uso?dias=14` requiere `ADMINISTRADOR` o `AUDITOR` y devuelve
+solo métricas agregadas: totales (identidades, credenciales activas, sesiones,
+documentos, eventos de auditoría y alertas activas), tasas de aprobación y de
+prueba de vida superada, confianza facial promedio, conteos por estado,
+resultado, trámite, tipo de credencial y rol, y sesiones por día (`dias` entre 1
+y 90). No incluye nombres, documentos, correos, códigos de credencial ni
+identificadores. La página `frontend/dashboard.html` lo presenta con gráficos.

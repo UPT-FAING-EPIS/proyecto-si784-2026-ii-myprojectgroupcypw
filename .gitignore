@@ -27,3 +27,18 @@ backend/benchmarks/*.json
 backend/reporte*.json
 frontend/e2e/*.json
 backend/disponibilidad*.csv
+
+# Terraform (infra/terraform): proveedores descargados, estado y variables locales
+infra/terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+backend_override.tf
+
+# Reportes de calidad y seguridad generados localmente
+backend/coverage.xml
+backend/.coverage
+semgrep*.json
+semgrep*.sarif
+snyk*.json
+snyk*.sarif

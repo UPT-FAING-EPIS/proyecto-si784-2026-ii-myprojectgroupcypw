@@ -1,0 +1,209 @@
+# Release y despliegue. Al publicar una etiqueta vX.Y.Z (o manualmente):
+# 1. ejecuta las pruebas del backend;
+# 2. construye y publica las imágenes backend y frontend en GHCR;
+# 3. crea el GitHub Release con notas generadas y el reporte de pruebas;
+# 4. despliega las imágenes en las Web Apps aprovisionadas por Terraform.
+# El despliegue requiere el secreto AZURE_CREDENTIALS y las variables
+# AZURE_WEBAPP_BACKEND, AZURE_WEBAPP_FRONTEND y NOTARYVERIFY_API_URL
+# (las imprime el workflow de Terraform tras "apply").
+name: Release y despliegue
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Etiqueta a publicar (por ejemplo v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
+  REGISTRY: ghcr.io
+
+jobs:
+  pruebas:
+    name: Pruebas backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: apt-get install libegl1 libgles2 libgl1
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgles2 libgl1
+
+      - name: python -m pytest -q
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pytest -q --junitxml=pytest-report.xml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-pytest-report
+          path: backend/pytest-report.xml
+
+  imagenes:
+    name: Imágenes Docker (GHCR)
+    needs: pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      backend: ${{ steps.nombres.outputs.backend }}
+      frontend: ${{ steps.nombres.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nombres de imagen
+        id: nombres
+        run: |
+          base="${REGISTRY}/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          echo "backend=${base}-backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=${base}-frontend" >> "$GITHUB_OUTPUT"
+
+      # La URL pública de la API se inyecta solo en la copia de construcción,
+      # sin modificar los archivos versionados.
+      - name: Configurar URL de la API en el frontend
+        env:
+          API_URL: ${{ vars.NOTARYVERIFY_API_URL }}
+        run: |
+          if [ -n "$API_URL" ]; then
+            for pagina in frontend/index.html frontend/dashboard.html; do
+              sed -i "s|<head>|<head>\n<script>window.NOTARYVERIFY_API = \"${API_URL}\";</script>|" "$pagina"
+            done
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.nombres.outputs.backend }}:${{ env.VERSION }}
+            ${{ steps.nombres.outputs.backend }}:latest
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ steps.nombres.outputs.frontend }}:${{ env.VERSION }}
+            ${{ steps.nombres.outputs.frontend }}:latest
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  release:
+    name: GitHub Release
+    needs: imagenes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-pytest-report
+
+      - name: Crear release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGEN_BACKEND: ${{ needs.imagenes.outputs.backend }}
+          IMAGEN_FRONTEND: ${{ needs.imagenes.outputs.frontend }}
+        run: |
+          cat > notas.md <<EOF
+          Prototipo académico sin valor de identificación legal.
+
+          **Imágenes**
+          - \`${IMAGEN_BACKEND}:${VERSION}\`
+          - \`${IMAGEN_FRONTEND}:${VERSION}\`
+          EOF
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release upload "$VERSION" pytest-report.xml --clobber
+          else
+            gh release create "$VERSION" pytest-report.xml \
+              --title "NotaryVerify $VERSION" --notes-file notas.md --generate-notes \
+              --target "$GITHUB_SHA"
+          fi
+
+  despliegue:
+    name: Desplegar en Azure
+    needs: [imagenes, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: azure
+    steps:
+      - name: Comprobar configuración
+        id: config
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          BACKEND: ${{ vars.AZURE_WEBAPP_BACKEND }}
+          FRONTEND: ${{ vars.AZURE_WEBAPP_FRONTEND }}
+        run: |
+          if [ -z "$AZURE_CREDENTIALS" ] || [ -z "$BACKEND" ] || [ -z "$FRONTEND" ]; then
+            echo "::warning::Despliegue omitido: configure AZURE_CREDENTIALS, AZURE_WEBAPP_BACKEND y AZURE_WEBAPP_FRONTEND."
+            echo "Despliegue omitido: falta configuración de Azure." >> "$GITHUB_STEP_SUMMARY"
+            echo "disponible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "disponible=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: azure/login@v2
+        if: steps.config.outputs.disponible == 'true'
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Desplegar backend
+        if: steps.config.outputs.disponible == 'true'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_BACKEND }}
+          images: ${{ needs.imagenes.outputs.backend }}:${{ env.VERSION }}
+
+      - name: Desplegar frontend
+        if: steps.config.outputs.disponible == 'true'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_FRONTEND }}
+          images: ${{ needs.imagenes.outputs.frontend }}:${{ env.VERSION }}
+
+      - name: Verificar salud de la API
+        if: steps.config.outputs.disponible == 'true' && vars.NOTARYVERIFY_API_URL != ''
+        env:
+          API_URL: ${{ vars.NOTARYVERIFY_API_URL }}
+        run: |
+          for intento in $(seq 1 20); do
+            if curl --fail --silent "$API_URL/salud"; then
+              echo
+              echo "API desplegada y saludable: $API_URL" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::La API no respondió /salud tras el despliegue."
+          exit 1
