@@ -114,15 +114,23 @@ def diagrama_clases() -> str:
         for col in tabla.columns:
             lineas.append(f"        +{_tipo_mermaid(col)} {col.name}")
         lineas.append("    }")
+    # Base.registry.mappers es un conjunto sin orden estable: primero se reúnen
+    # todas las relaciones ORM y luego las FK no cubiertas, para que el
+    # resultado no dependa del orden de iteración.
     relaciones = set()
-    for nombre, mapper in modelos.items():
-        for rel in mapper.relationships:
+    cubiertas = set()
+    for nombre in sorted(modelos):
+        for rel in modelos[nombre].relationships:
             if rel.direction.name == "ONETOMANY":
-                relaciones.add(f"    {nombre} \"1\" --> \"*\" {rel.mapper.class_.__name__}")
-        for col in mapper.local_table.columns:
+                destino = rel.mapper.class_.__name__
+                relaciones.add(f"    {nombre} \"1\" --> \"*\" {destino}")
+                cubiertas.add((nombre, destino))
+    por_tabla = {m.local_table: nombre for nombre, m in modelos.items()}
+    for nombre in sorted(modelos):
+        for col in modelos[nombre].local_table.columns:
             for fk in col.foreign_keys:
-                destino = next((m.class_.__name__ for m in Base.registry.mappers if m.local_table is fk.column.table), None)
-                if destino and not any(f"{destino} \"1\" --> \"*\" {nombre}" in r for r in relaciones):
+                destino = por_tabla.get(fk.column.table)
+                if destino and (destino, nombre) not in cubiertas:
                     relaciones.add(f"    {destino} \"1\" -- \"*\" {nombre} : {col.name}")
 
     servicios = _clases_python(BACKEND / "app" / "services")
