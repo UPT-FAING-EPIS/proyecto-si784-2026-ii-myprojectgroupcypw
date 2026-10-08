@@ -1,0 +1,72 @@
+# Publica en GitHub Pages la documentación técnica del backend (pdoc):
+# detalle de cada módulo, clase, método y propiedad a partir de docstrings y
+# anotaciones. Requiere Settings > Pages > Source: "GitHub Actions".
+name: Documentación técnica (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/**"
+      - ".github/workflows/documentacion-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Generar documentación con pdoc
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: apt-get install libegl1 libgles2 libgl1
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgles2 libgl1
+
+      - name: pip install -r requirements.txt pdoc
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt "pdoc>=14"
+
+      # La importación de app.core.database crea el directorio de datos: se usa uno temporal.
+      - name: pdoc app
+        working-directory: backend
+        env:
+          NOTARYVERIFY_DATA_DIR: ${{ runner.temp }}/notaryverify-data
+        run: |
+          pdoc app \
+            --docformat google \
+            --footer-text "NotaryVerify · prototipo académico sin valor de identificación legal" \
+            --output-directory "$RUNNER_TEMP/site"
+          echo "Páginas generadas: $(find "$RUNNER_TEMP/site" -name '*.html' | wc -l)"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: Publicar en GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
