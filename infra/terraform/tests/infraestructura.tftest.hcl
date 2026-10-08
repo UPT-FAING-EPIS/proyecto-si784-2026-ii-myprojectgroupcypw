@@ -109,6 +109,16 @@ run "rechaza_sku_no_permitido" {
   expect_failures = [var.sku_plan]
 }
 
+run "rechaza_region_no_permitida" {
+  command = plan
+
+  variables {
+    ubicacion = "eastus2"
+  }
+
+  expect_failures = [var.ubicacion]
+}
+
 run "rechaza_prefijo_invalido" {
   command = plan
 

@@ -10,9 +10,14 @@ variable "prefijo" {
 }
 
 variable "ubicacion" {
-  description = "Región de Azure."
+  description = "Región de Azure. Azure for Students solo permite algunas regiones (política de la suscripción)."
   type        = string
-  default     = "eastus2"
+  default     = "canadacentral"
+
+  validation {
+    condition     = contains(["canadacentral", "chilecentral", "mexicocentral", "northcentralus", "westus"], var.ubicacion)
+    error_message = "ubicacion admite las regiones permitidas por Azure for Students: canadacentral, chilecentral, mexicocentral, northcentralus o westus."
+  }
 }
 
 variable "sku_plan" {

@@ -33,7 +33,10 @@ python .github/scripts/reporte_seguridad.py semgrep semgrep.json semgrep-reporte
 ## Infraestructura en Azure
 
 [infra/terraform](../../../infra/terraform/main.tf) crea un Resource Group, un App
-Service Plan Linux (`B1` por defecto, `F1` gratuito) y dos Web Apps de
+Service Plan Linux (`B1` por defecto, `F1` gratuito) en `canadacentral` (la
+suscripción Azure for Students solo permite `canadacentral`, `chilecentral`,
+`mexicocentral`, `northcentralus` y `westus`; se elige con la entrada `ubicacion`
+del workflow) y dos Web Apps de
 contenedor: backend en el puerto 8000 con healthcheck `/salud`, datos en el
 almacenamiento persistente `/home/data` y CORS limitado a la URL del frontend;
 frontend en el puerto 5500. Ambos exigen HTTPS y TLS 1.2 y deshabilitan FTP.
