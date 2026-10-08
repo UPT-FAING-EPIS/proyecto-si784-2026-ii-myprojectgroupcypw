@@ -7,46 +7,157 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='1' y='1' width='38' height='38' rx='11' fill='%23dcb85a'/%3E%3Cpath d='M12 20.5l5.4 5.4L28 15.3' fill='none' stroke='%232a1f06' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <style>
   :root {
     --n-950: #070c16; --n-900: #0b1220; --n-850: #101a2b; --n-800: #162339;
-    --n-700: #1f3150; --n-400: #7d93b3; --n-200: #c6d4e8; --n-050: #eef4fc;
-    --zafiro-400: #5aa0f5; --oro-400: #dcb85a; --esmeralda: #3ecf96; --rojo: #f0605c; --ambar: #e8973f;
+    --n-700: #1f3150; --n-600: #2c4468; --n-400: #7d93b3; --n-200: #c6d4e8; --n-050: #eef4fc;
+    --zafiro-300: #8ec2ff; --zafiro-400: #5aa0f5; --zafiro-500: #3480e6; --zafiro-600: #2364c4;
+    --oro-300: #f0d68a; --oro-400: #dcb85a; --oro-500: #c09b36;
+    --esmeralda: #3ecf96; --rojo: #f0605c; --ambar: #e8973f;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--n-950); color: var(--n-200); font-family: Inter, system-ui, sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-           padding: 18px 24px; border-bottom: 1px solid var(--n-800); }
-  h1 { font-family: Fraunces, serif; font-size: 1.3rem; color: var(--n-050); margin: 0; }
-  header p { margin: 2px 0 0; font-size: .85rem; color: var(--n-400); }
-  a { color: var(--zafiro-400); }
-  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  input, select, button { font: inherit; border-radius: 10px; border: 1px solid var(--n-700);
-                          background: var(--n-900); color: var(--n-050); padding: 8px 12px; }
-  button { background: var(--n-800); cursor: pointer; font-weight: 600; }
-  .aviso { font-size: .8rem; color: var(--n-400); margin: 0 0 20px; }
-  .estado { margin: 0 0 16px; color: var(--ambar); min-height: 1.2em; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .kpi { background: var(--n-900); border: 1px solid var(--n-800); border-radius: 14px; padding: 14px 16px; }
-  .kpi span { display: block; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--n-400); }
-  .kpi strong { display: block; font-size: 1.6rem; color: var(--n-050); margin-top: 4px; font-variant-numeric: tabular-nums; }
-  .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-  .panel { background: var(--n-900); border: 1px solid var(--n-800); border-radius: 14px; padding: 16px; min-width: 0; }
-  .panel h2 { font-size: .95rem; margin: 0 0 12px; color: var(--n-050); }
-  .panel canvas { width: 100% !important; max-height: 280px; }
   [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column; min-height: 100vh;
+    background: var(--n-950); color: var(--n-200);
+    font: 400 14.5px/1.55 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: -30% -10% auto; height: 70vh; pointer-events: none; z-index: 0;
+    background: radial-gradient(52% 60% at 50% 0%, rgba(52, 128, 230, .14) 0%, transparent 70%);
+    filter: blur(14px);
+  }
+  a { color: var(--zafiro-300); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Barra superior ── */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between;
+    padding: 14px 30px;
+    background: rgba(7, 12, 22, .8); backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+  }
+  .marca { display: flex; align-items: center; gap: 13px; }
+  .marca svg { width: 38px; height: 38px; flex: 0 0 38px; filter: drop-shadow(0 6px 14px rgba(52, 128, 230, .4)); }
+  h1 { margin: 0; font: 600 16.5px/1.25 Fraunces, Georgia, serif; color: var(--n-050); letter-spacing: -.01em; }
+  header p { margin: 0; font-size: 12px; color: var(--n-400); }
+
+  form {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 4px; border-radius: 13px;
+    border: 1px solid rgba(255, 255, 255, .08); background: rgba(255, 255, 255, .03);
+  }
+  form label { padding: 0 6px 0 8px; font-size: 12.5px; color: var(--n-400); }
+  input, select, button { font: 500 13px/1.2 Inter, system-ui, sans-serif; border-radius: 9px; }
+  input, select {
+    padding: 8px 12px; border: 1px solid transparent;
+    background: rgba(7, 11, 16, .55); color: var(--n-050);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input { width: 210px; font-weight: 400; }
+  input::placeholder { color: var(--n-400); opacity: .8; }
+  input:focus, select:focus { outline: none; border-color: var(--zafiro-500); box-shadow: 0 0 0 3px rgba(52, 128, 230, .14); }
+  select option { background: var(--n-900); }
+  button {
+    padding: 8px 15px; cursor: pointer; border: 1px solid rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .07); color: var(--n-050); transition: background .2s, box-shadow .2s;
+  }
+  button:hover { background: rgba(255, 255, 255, .12); }
+  button[type="submit"] {
+    border-color: transparent; color: #06152b; font-weight: 600;
+    background: linear-gradient(140deg, var(--zafiro-300) 0%, var(--zafiro-500) 55%, var(--zafiro-600) 100%);
+  }
+  button[type="submit"]:hover { box-shadow: 0 10px 24px -8px rgba(52, 128, 230, .6); }
+  #salir:hover { background: rgba(240, 96, 92, .14); color: #ffc4c2; }
+
+  /* ── Contenido ── */
+  main { position: relative; z-index: 1; flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: 30px 24px 48px; }
+  .encabezado { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; margin-bottom: 22px; }
+  .encabezado h2 { margin: 0; font: 600 26px/1.2 Fraunces, Georgia, serif; color: var(--n-050); letter-spacing: -.015em; }
+  .etiqueta { display: block; margin-bottom: 8px; font-size: 11px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--oro-400); }
+  .estado { margin: 0; font-size: 12.5px; color: var(--n-400); min-height: 1.2em; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .kpi {
+    position: relative; overflow: hidden;
+    padding: 16px 18px; border-radius: 16px;
+    background: linear-gradient(168deg, var(--n-850) 0%, var(--n-900) 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .05), 0 18px 40px -24px rgba(0, 0, 0, .8);
+  }
+  .kpi::before {
+    content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, var(--zafiro-300), var(--zafiro-600));
+  }
+  .kpi span { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--n-400); }
+  .kpi strong { display: block; margin-top: 6px; font: 600 26px/1.15 Inter, sans-serif; color: var(--n-050); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+  .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+  .panel {
+    position: relative; min-width: 0; padding: 18px 20px 16px; border-radius: 18px;
+    background: linear-gradient(168deg, var(--n-850) 0%, var(--n-900) 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .05), 0 24px 50px -28px rgba(0, 0, 0, .85);
+  }
+  .panel::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px; border-radius: 18px 18px 0 0;
+    background: linear-gradient(90deg, transparent, rgba(142, 194, 255, .35), transparent);
+  }
+  .panel h2 { margin: 0 0 14px; font-size: 13.5px; font-weight: 600; color: var(--n-050); }
+  .panel canvas { width: 100% !important; max-height: 244px; }
+
+  /* Estado inicial: se muestra mientras los gráficos están ocultos (sin sesión). */
+  .bienvenida {
+    display: grid; justify-items: center; gap: 10px; text-align: center;
+    max-width: 520px; margin: 40px auto 0; padding: 40px 32px; border-radius: 22px;
+    background: linear-gradient(168deg, var(--n-850) 0%, var(--n-900) 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .05), 0 30px 70px -20px rgba(0, 0, 0, .7);
+  }
+  .bienvenida svg { width: 46px; height: 46px; fill: none; stroke: var(--oro-300); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .bienvenida strong { font: 600 20px/1.3 Fraunces, Georgia, serif; color: var(--n-050); }
+  .bienvenida p { margin: 0; font-size: 13.5px; color: var(--n-400); }
+  .graficos:not([hidden]) + .bienvenida { display: none; }
+
+  footer {
+    position: relative; z-index: 1;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px;
+    padding: 16px 30px; border-top: 1px solid rgba(255, 255, 255, .05);
+    font-size: 12px; color: var(--n-400);
+  }
+
+  @media (max-width: 640px) {
+    header, footer { padding: 13px 16px; }
+    main { padding: 22px 16px 40px; }
+    form { width: 100%; }
+    input { flex: 1; min-width: 0; width: auto; }
+    .graficos { grid-template-columns: 1fr; }
+    footer { justify-content: center; text-align: center; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Dashboard de utilización</h1>
-    <p>NotaryVerify · métricas agregadas, sin datos personales · <a href="index.html">Volver a la estación</a></p>
+  <div class="marca">
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      <defs>
+        <linearGradient id="gradSello" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f0d68a" />
+          <stop offset="100%" stop-color="#c09b36" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#gradSello)" />
+      <path d="M12 20.5l5.4 5.4L28 15.3" fill="none" stroke="#2a1f06" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <div>
+      <h1>NotaryVerify</h1>
+      <p>Dashboard de utilización · <a href="index.html">Volver a la estación</a></p>
+    </div>
   </div>
   <form id="login">
-    <input id="correo" type="email" placeholder="correo (administrador o auditor)" autocomplete="username" required />
-    <input id="password" type="password" placeholder="contraseña" autocomplete="current-password" required />
+    <input id="correo" type="email" placeholder="Correo" aria-label="Correo" autocomplete="username" required />
+    <input id="password" type="password" placeholder="Contraseña" aria-label="Contraseña" autocomplete="current-password" required />
     <button type="submit">Ingresar</button>
   </form>
   <form id="filtros" hidden>
@@ -63,8 +174,13 @@
 </header>
 
 <main>
-  <p class="aviso">Prototipo académico sin valor de identificación legal. Los datos provienen de identidades ficticias.</p>
-  <p class="estado" id="estado" role="status"></p>
+  <div class="encabezado">
+    <div>
+      <span class="etiqueta">Métricas agregadas</span>
+      <h2>Utilización del sistema</h2>
+    </div>
+    <p class="estado" id="estado" role="status"></p>
+  </div>
   <section class="kpis" id="kpis"></section>
   <section class="graficos" id="graficos" hidden>
     <div class="panel"><h2>Sesiones por día</h2><canvas id="g-dia"></canvas></div>
@@ -74,7 +190,17 @@
     <div class="panel"><h2>Credenciales por tipo</h2><canvas id="g-credencial"></canvas></div>
     <div class="panel"><h2>Usuarios por rol</h2><canvas id="g-rol"></canvas></div>
   </section>
+  <div class="bienvenida">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40V22 M18 40V12 M28 40V26 M38 40V8 M5 40h38" /></svg>
+    <strong>Ingrese para ver las métricas</strong>
+    <p>El dashboard está disponible para los roles Administrador y Auditor. Solo muestra datos agregados, sin información personal.</p>
+  </div>
 </main>
+
+<footer>
+  <span>© 2026 NotaryVerify · Prototipo académico UPT — sin valor de identificación legal. Los datos provienen de identidades ficticias.</span>
+  <a href="index.html">Estación de verificación</a>
+</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="dashboard.js"></script>

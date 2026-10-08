@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='1' y='1' width='38' height='38' rx='11' fill='%23dcb85a'/%3E%3Cpath d='M12 20.5l5.4 5.4L28 15.3' fill='none' stroke='%232a1f06' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
@@ -40,23 +41,38 @@
   </ol>
 
   <div class="barra__final">
-    <form id="form-login" class="acciones--par" aria-label="Inicio de sesión local">
-      <input id="login-correo" type="email" placeholder="correo de desarrollo" autocomplete="username" required />
-      <input id="login-password" type="password" placeholder="contraseña" autocomplete="current-password" required />
-      <button class="boton boton--sutil boton--compacto" type="submit">Ingresar</button>
-    </form>
-    <div id="sesion-activa" class="acciones--par" hidden>
-      <span id="sesion-usuario"></span>
-      <button class="boton boton--fantasma boton--compacto" id="boton-logout" type="button">Salir</button>
-    </div>
     <div class="modos" role="tablist">
       <button class="modo modo--activo" id="modo-verificar" role="tab">Verificación</button>
       <button class="modo" id="modo-administrar" role="tab">Administración</button>
     </div>
-    <p class="alerta" id="error-login" hidden></p>
+
     <div class="conexion" id="conexion">
       <span class="conexion__punto"></span>
       <span id="texto-api">conectando</span>
+    </div>
+
+    <div class="acceso-envoltura">
+      <form id="form-login" class="acceso" aria-label="Inicio de sesión local">
+        <label class="acceso__campo">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14v9H3z M3.4 6l6.6 5 6.6-5" /></svg>
+          <input id="login-correo" type="email" placeholder="Correo" aria-label="Correo" autocomplete="username" required />
+        </label>
+        <label class="acceso__campo">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 9h10v8H5z M7 9V6.5a3 3 0 0 1 6 0V9" /></svg>
+          <input id="login-password" type="password" placeholder="Contraseña" aria-label="Contraseña" autocomplete="current-password" required />
+        </label>
+        <button class="boton boton--principal boton--compacto acceso__boton" type="submit">
+          <span class="boton__texto">Ingresar</span>
+        </button>
+      </form>
+      <div id="sesion-activa" class="sesion" hidden>
+        <span class="sesion__avatar" aria-hidden="true">
+          <svg viewBox="0 0 20 20"><circle cx="10" cy="7" r="3.2" /><path d="M3.8 17a6.2 6.2 0 0 1 12.4 0" /></svg>
+        </span>
+        <span class="sesion__usuario" id="sesion-usuario"></span>
+        <button class="sesion__salir" id="boton-logout" type="button" title="Cerrar sesión">Salir</button>
+      </div>
+      <p class="alerta alerta--flotante" id="error-login" hidden></p>
     </div>
   </div>
 </header>
@@ -66,6 +82,17 @@
   <!-- ══════════════ PASO 1 · CREDENCIAL ══════════════ -->
   <section class="pantalla pantalla--activa" id="pantalla-credencial">
     <div class="panel panel--angosto">
+      <div class="emblema" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <rect x="6" y="6" width="14" height="14" rx="3" />
+          <rect x="28" y="6" width="14" height="14" rx="3" />
+          <rect x="6" y="28" width="14" height="14" rx="3" />
+          <path d="M28 28h5v5h-5z M37 28h5 M28 37v5 M33 37h9v5 M37 33v4" />
+          <rect x="11" y="11" width="4" height="4" class="emblema__relleno" />
+          <rect x="33" y="11" width="4" height="4" class="emblema__relleno" />
+          <rect x="11" y="33" width="4" height="4" class="emblema__relleno" />
+        </svg>
+      </div>
       <span class="etiqueta">Paso 1 de 4</span>
       <h1 class="titulo">Presente la credencial</h1>
       <p class="guia">Lea el código QR o RFID del compareciente para recuperar el registro que debe verificarse.</p>
@@ -77,7 +104,7 @@
       </label>
 
       <p class="alerta" id="error-credencial" hidden></p>
-      <p class="pie" id="aviso-sesion">Inicie sesión como Operador para comenzar una verificación.</p>
+      <p class="nota" id="aviso-sesion">Inicie sesión como Operador para comenzar una verificación.</p>
 
       <button class="boton boton--principal boton--ancho" id="boton-iniciar">
         <span class="boton__texto">Iniciar verificación</span>
@@ -554,6 +581,13 @@
   </section>
 
 </main>
+
+<footer class="piepagina">
+  <span>© 2026 NotaryVerify · Prototipo académico UPT — sin valor de identificación legal</span>
+  <nav class="piepagina__enlaces" aria-label="Enlaces">
+    <a href="dashboard.html">Dashboard de utilización</a>
+  </nav>
+</footer>
 
 <canvas id="lienzo" hidden></canvas>
 

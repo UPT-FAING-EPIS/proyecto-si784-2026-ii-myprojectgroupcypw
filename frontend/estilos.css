@@ -251,6 +251,64 @@ body {
 .guia--centro { max-width: 40ch; margin-inline: auto; }
 
 .pie { margin: 18px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--n-400); }
+
+/* Emblema del paso inicial: un QR estilizado sobre placa de oro tenue. */
+.emblema {
+  display: grid; place-items: center;
+  width: 54px; height: 54px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(220, 184, 90, .28);
+  background: linear-gradient(145deg, rgba(220, 184, 90, .16), rgba(220, 184, 90, .04));
+}
+.emblema svg {
+  width: 28px; height: 28px;
+  fill: none;
+  stroke: var(--oro-300);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.emblema .emblema__relleno { fill: var(--oro-300); stroke: none; }
+
+/* Nota informativa (no es un error): requisito previo para continuar. */
+.nota {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(90, 160, 245, .2);
+  background: rgba(90, 160, 245, .07);
+  color: var(--n-200);
+  font-size: 13px; line-height: 1.45;
+}
+.nota::before {
+  content: "";
+  flex: 0 0 16px;
+  height: 16px;
+  background: var(--zafiro-300);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9h10v8H5z M7 9V6.5a3 3 0 0 1 6 0V9'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9h10v8H5z M7 9V6.5a3 3 0 0 1 6 0V9'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ═════════════════ Pie de página ═════════════════ */
+
+.piepagina {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  padding: 16px 30px;
+  border-top: 1px solid rgba(255, 255, 255, .05);
+  font-size: 12px;
+  color: var(--n-400);
+}
+.piepagina__enlaces { display: flex; gap: 18px; }
+.piepagina a { color: var(--n-200); text-decoration: none; transition: color .2s; }
+.piepagina a:hover { color: var(--zafiro-300); }
 .pie--legal {
   margin-top: 24px; padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, .07);
@@ -324,6 +382,16 @@ body {
 }
 .boton--ancho { width: 100%; }
 .boton:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Botón principal deshabilitado: superficie neutra en vez de un azul lavado,
+   para que se lea como "aún no disponible" y no como un error de color. */
+.boton--principal:disabled {
+  opacity: 1;
+  background: var(--n-800);
+  border-color: rgba(255, 255, 255, .06);
+  color: var(--n-400);
+  box-shadow: none;
+}
 .boton:not(:disabled):active { transform: translateY(1px) scale(.994); }
 
 .boton--principal {
@@ -731,7 +799,118 @@ body {
 
 /* ═════════════════ Modos: verificación / administración ═════════════════ */
 
-.barra__final { display: flex; align-items: center; gap: 14px; }
+.barra__final { display: flex; align-items: center; gap: 12px; }
+
+/* ═════════════════ Acceso y sesión ═════════════════ */
+
+/* El acceso vive en la barra como un único control compacto: dos campos con
+   icono y el botón en la misma fila, en lugar de controles nativos sueltos. */
+.acceso-envoltura { position: relative; }
+
+.acceso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .03);
+}
+
+.acceso__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.acceso__campo svg {
+  position: absolute;
+  left: 11px;
+  width: 15px; height: 15px;
+  fill: none;
+  stroke: var(--n-400);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  transition: stroke .2s;
+}
+.acceso__campo input {
+  width: 168px;
+  padding: 8px 12px 8px 33px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: rgba(7, 11, 16, .55);
+  color: var(--n-050);
+  font: 400 13px/1.2 "Inter", system-ui, sans-serif;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.acceso__campo input::placeholder { color: var(--n-400); opacity: .8; }
+.acceso__campo input:focus {
+  outline: none;
+  border-color: var(--zafiro-500);
+  background: rgba(7, 11, 16, .85);
+  box-shadow: 0 0 0 3px rgba(52, 128, 230, .14);
+}
+.acceso__campo:focus-within svg { stroke: var(--zafiro-300); }
+
+/* Autorrelleno del navegador: conserva el fondo oscuro. */
+.acceso__campo input:-webkit-autofill {
+  -webkit-text-fill-color: var(--n-050);
+  -webkit-box-shadow: 0 0 0 40px #0b1424 inset;
+  caret-color: var(--n-050);
+}
+
+.acceso__boton { padding: 8px 16px; border-radius: 9px; font-size: 13px; box-shadow: none; }
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 4px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .03);
+}
+.sesion__avatar {
+  display: grid; place-items: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--oro-300), var(--oro-500));
+}
+.sesion__avatar svg {
+  width: 16px; height: 16px;
+  fill: none; stroke: #2a1f06; stroke-width: 1.7; stroke-linecap: round;
+}
+.sesion__usuario {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px; font-weight: 500;
+  color: var(--n-200);
+}
+.sesion__salir {
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  color: var(--n-200);
+  font: 500 12px/1 "Inter", system-ui, sans-serif;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.sesion__salir:hover { background: var(--rojo-tenue); color: #ffc4c2; }
+
+/* El error de acceso flota bajo el formulario para no desplazar la barra. */
+.alerta--flotante {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: max(100%, 300px);
+  margin: 0;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .7);
+  background: #2a1418;
+}
 
 .modos {
   display: flex;
@@ -1137,11 +1316,36 @@ body {
   .acciones--cabecera { width: 100%; }
 }
 
+/* Con el acceso en la barra, los pasos bajan a una segunda fila antes de que
+   los controles se amontonen. */
+@media (max-width: 1360px) {
+  .barra { flex-wrap: wrap; row-gap: 12px; }
+  .barra__final { margin-left: auto; }
+  .pasos {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, .05);
+  }
+}
+
 @media (max-width: 880px) {
-  .barra { flex-wrap: wrap; gap: 16px; padding: 13px 20px; }
-  .pasos { order: 3; width: 100%; margin: 0; overflow-x: auto; }
+  .barra { gap: 14px; padding: 13px 20px; }
+  .barra__final { flex-wrap: wrap; justify-content: flex-end; }
+  .pasos { justify-content: flex-start; margin: 0; overflow-x: auto; }
   .paso { padding: 0 14px; }
-  .conexion { margin-left: auto; }
+  .piepagina { padding: 14px 20px; }
+}
+
+@media (max-width: 640px) {
+  .barra__final { width: 100%; justify-content: space-between; }
+  .acceso-envoltura { width: 100%; order: 3; }
+  .acceso { width: 100%; }
+  .acceso__campo { flex: 1; min-width: 0; }
+  .acceso__campo input { width: 100%; }
+  .alerta--flotante { width: 100%; }
+  .piepagina { justify-content: center; text-align: center; }
 }
 
 @media (max-width: 560px) {
