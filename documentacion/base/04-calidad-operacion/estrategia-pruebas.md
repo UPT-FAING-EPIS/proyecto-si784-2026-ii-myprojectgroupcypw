@@ -71,6 +71,15 @@ en pantalla como capturas estáticas que no realizan el giro solicitado; ambas
 son rechazadas. Esta evidencia demuestra el comportamiento controlado, no que
 MediaPipe determine el material de una imagen ni que resista ataques avanzados.
 
+## Evaluación presencial M7
+
+El [protocolo de evaluación biométrica y prueba de vida](protocolo-evaluacion-experimental.md)
+define el consentimiento, códigos anónimos, campos de observación, límites y
+eliminación de datos para #26 y #27. El libro local de registro se prepara sin
+datos reales y solo se completa presencialmente por el evaluador con voluntarios
+consentidos. Hasta que se ejecuten esas observaciones no se declaran precisión,
+FPR ni resistencia a presentaciones estáticas.
+
 ## Evidencia de auditoría recuperable M4
 
 `backend/tests/test_auditoria_hashchain.py` prueba el evento génesis, la cadena
