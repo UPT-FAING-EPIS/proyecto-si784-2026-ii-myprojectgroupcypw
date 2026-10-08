@@ -26,6 +26,11 @@ on:
         type: choice
         options: [plan, apply, destroy]
         default: plan
+      ubicacion:
+        description: "Región de Azure (permitidas por Azure for Students)"
+        type: choice
+        options: [canadacentral, chilecentral, mexicocentral, northcentralus, westus]
+        default: canadacentral
 
 permissions:
   contents: read
@@ -218,6 +223,7 @@ jobs:
         working-directory: ${{ env.TF_DIR }}
         env:
           ACCION: ${{ inputs.accion }}
+          TF_VAR_ubicacion: ${{ inputs.ubicacion }}
         run: |
           if [ "$ACCION" = "destroy" ]; then
             terraform plan -destroy -input=false -no-color -out=tfplan | tee plan.txt
