@@ -1,0 +1,123 @@
+# Análisis estático de seguridad con Semgrep y Snyk, con reporte de hallazgos.
+# Semgrep no necesita cuenta. Snyk requiere el secreto SNYK_TOKEN; sin él se
+# omite con un aviso. Criterio de superación: Semgrep sin severidad ERROR y
+# Snyk sin hallazgos high/critical.
+name: Seguridad (Semgrep y Snyk)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep:1.180.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: semgrep scan
+        run: |
+          semgrep scan \
+            --config p/python --config p/javascript --config p/secrets \
+            --config p/dockerfile --config p/github-actions \
+            --metrics=off \
+            --json --output semgrep.json \
+            --sarif-output semgrep.sarif || true
+
+      - name: Reporte de hallazgos Semgrep
+        run: python3 .github/scripts/reporte_seguridad.py semgrep semgrep.json semgrep-reporte.md
+
+      - name: Publicar reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-reporte
+          path: |
+            semgrep-reporte.md
+            semgrep.json
+            semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 30
+
+  snyk:
+    name: Snyk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Comprobar SNYK_TOKEN
+        id: token
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "::warning::Configure el secreto SNYK_TOKEN para ejecutar Snyk."
+            echo "Snyk omitido: falta el secreto SNYK_TOKEN." >> "$GITHUB_STEP_SUMMARY"
+            echo "disponible=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "disponible=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.disponible == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.token.outputs.disponible == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.disponible == 'true'
+        with:
+          node-version: "20"
+
+      # Snyk resuelve las versiones reales instaladas a partir de requirements.txt.
+      - name: pip install -r requirements.txt y snyk
+        if: steps.token.outputs.disponible == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          npm install --global snyk@1.1294.0
+
+      - name: snyk test (dependencias)
+        if: steps.token.outputs.disponible == 'true'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk test --file=backend/requirements.txt --package-manager=pip --command=python \
+            --json-file-output=snyk-deps.json || true
+
+      - name: snyk code test (código)
+        if: steps.token.outputs.disponible == 'true'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk code test --sarif-file-output=snyk-code.sarif || true
+
+      - name: Reporte de hallazgos Snyk
+        if: steps.token.outputs.disponible == 'true'
+        run: python .github/scripts/reporte_seguridad.py snyk snyk-deps.json snyk-code.sarif snyk-reporte.md
+
+      - name: Publicar reporte
+        if: always() && steps.token.outputs.disponible == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-reporte
+          path: |
+            snyk-reporte.md
+            snyk-deps.json
+            snyk-code.sarif
+          if-no-files-found: ignore
+          retention-days: 30
